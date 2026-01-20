@@ -12,6 +12,11 @@ let textoProcesadoTXT = "";   // TEXTO LIMPIO PARA TXT
 /* ===============================
    LECTURA DEL WORD
 ================================ */
+// 🔹 Limpia el input al hacer click para permitir mismo nombre
+fileInput.addEventListener("click", function () {
+    this.value = "";
+});
+
 fileInput.addEventListener("change", function () {
     const file = this.files[0];
     if (!file) return;
@@ -30,6 +35,7 @@ fileInput.addEventListener("change", function () {
 
     reader.readAsArrayBuffer(file);
 });
+
 
 /* ===============================
    EXPORTAR TXT
