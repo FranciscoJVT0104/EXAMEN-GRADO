@@ -16,10 +16,10 @@
 
         <div class="item">
             <input type="file" id="fileInput" accept=".docx" hidden>
-            <label for="fileInput" class="file-label">Seleccionar archivo</label>
-            <br>
+            <label for="fileInput" class="file-label" id="fileBtn">Seleccionar archivo</label>
             <span id="fileName"></span>
         </div>
+
 
 
         <div class="item">
@@ -36,13 +36,13 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
     <script src="script.js"></script>
+
     <script>
         document.getElementById("fileInput").addEventListener("change", function () {
             const fileName = this.files[0]?.name || "";
             document.getElementById("fileName").textContent = fileName;
         });
     </script>
-
 </body>
 
 </html>
