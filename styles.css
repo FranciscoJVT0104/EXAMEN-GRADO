@@ -1,0 +1,26 @@
+.container {
+  display: flex;
+  gap: 20px;
+  flex-direction: column;
+}
+
+.item:nth-child(1),
+.item:nth-child(2),
+.item:nth-child(3) {
+  flex-grow: 1;
+}
+
+.file-label {
+  padding: 10px 15px;
+  background: #4CAF50;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+#fileName {
+  display: block;
+  margin-top: 30px;
+  white-space: normal; /* permite mostrar todo el nombre */
+  word-break: break-all; /* evita corte visual */
+}
