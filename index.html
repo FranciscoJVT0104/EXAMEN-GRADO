@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lector Word a TXT</title>
+</head>
+<body>
+
+    <h1>Convertir Word a TXT</h1>
+
+    <input type="file" id="fileInput" accept=".docx">
+    <button id="exportBtn">Exportar a TXT</button>
+    <button id="exportExcelBtn">Exportar a Excel</button>
+
+
+    <textarea id="output" placeholder="Aquí aparecerá el texto..."></textarea>
+
+    <!-- Librería Mammoth -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
