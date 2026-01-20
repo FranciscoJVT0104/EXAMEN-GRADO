@@ -1,23 +1,48 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Lector Word a TXT</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-    <h1>Convertir Word a TXT</h1>
+    <div class="container">
+        <div class="item">
+            <h1>Convertir Word a TXT</h1>
+        </div>
 
-    <input type="file" id="fileInput" accept=".docx">
-    <button id="exportBtn">Exportar a TXT</button>
-    <button id="exportExcelBtn">Exportar a Excel</button>
+        <div class="item">
+            <input type="file" id="fileInput" accept=".docx" hidden>
+            <label for="fileInput" class="file-label">Seleccionar archivo</label>
+            <br>
+            <span id="fileName"></span>
+        </div>
 
 
-    <textarea id="output" placeholder="Aquí aparecerá el texto..."></textarea>
+        <div class="item">
+            <button id="exportBtn">Exportar a TXT</button>
+            <button id="exportExcelBtn">Exportar a Excel</button>
+        </div>
 
+        <div class="item">
+            <textarea id="output" placeholder="Aquí aparecerá el texto..."
+                style="width: 900px; height: 600px;"></textarea>
+        </div>
+    </div>
     <!-- Librería Mammoth -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
     <script src="script.js"></script>
+    <script>
+        document.getElementById("fileInput").addEventListener("change", function () {
+            const fileName = this.files[0]?.name || "";
+            document.getElementById("fileName").textContent = fileName;
+        });
+    </script>
+
 </body>
+
 </html>
