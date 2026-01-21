@@ -3,16 +3,65 @@ const output = document.getElementById("output");
 const exportBtn = document.getElementById("exportBtn");
 const exportExcelBtn = document.getElementById("exportExcelBtn");
 
+const clearBtn = document.getElementById("clearBtn");
+
+clearBtn.addEventListener("click", () => {
+    // Limpiar textarea
+    output.value = "";
+
+    // Limpiar input de archivo
+    fileInput.value = "";
+
+    // Limpiar nombre del archivo mostrado
+    const fileNameSpan = document.getElementById("fileName");
+    if (fileNameSpan) fileNameSpan.textContent = "";
+
+    // Reiniciar variables globales
+    textoOriginal = "";
+    textoProcesadoTXT = "";
+});
+
+
 /* ===============================
    VARIABLES GLOBALES
 ================================ */
-let textoOriginal = "";        // TEXTO CRUDO DEL WORD
-let textoProcesadoTXT = "";   // TEXTO LIMPIO PARA TXT
+let textoOriginal = "";
+let textoProcesadoTXT = "";
+
+/* ===============================
+   NORMALIZAR TEXTO WORD
+================================ */
+function normalizarLineas(texto) {
+    return texto
+        .split("\n")
+        .map(l =>
+            l
+                .replace(/\t/g, " ")       // eliminar tabs
+                .replace(/^•\s*/g, "")     // quitar viñetas
+                .replace(/\s+/g, " ")      // normalizar espacios
+                .trim()                     // quitar espacios al inicio y fin
+        )
+        .filter(l => l !== "");
+}
+
+/* ===============================
+   UTILIDADES PREGUNTA / OPCIONES
+================================ */
+const esOpcion = linea => /^[A-E]\)/.test(linea);
+
+const esPregunta = (linea, lineaAnterior) => {
+    return (
+        /^\d+\./.test(linea) ||                          // pregunta numerada
+        (!esOpcion(linea) && (
+            !lineaAnterior ||                             // primera línea
+            (esOpcion(lineaAnterior) && lineaAnterior.startsWith("E)"))  // después de E) nueva pregunta
+        ))
+    );
+};
 
 /* ===============================
    LECTURA DEL WORD
 ================================ */
-// 🔹 Limpia el input al hacer click para permitir mismo nombre
 fileInput.addEventListener("click", function () {
     this.value = "";
 });
@@ -36,7 +85,6 @@ fileInput.addEventListener("change", function () {
     reader.readAsArrayBuffer(file);
 });
 
-
 /* ===============================
    EXPORTAR TXT
 ================================ */
@@ -58,7 +106,7 @@ exportBtn.addEventListener("click", () => {
    PROCESAR TEXTO PARA TXT
 ================================ */
 function procesarTextoTXT(texto) {
-    const lineas = texto.split("\n").map(l => l.trim()).filter(l => l !== "");
+    const lineas = normalizarLineas(texto);
     let resultado = [];
 
     let i = 0;
@@ -71,22 +119,27 @@ function procesarTextoTXT(texto) {
         if (/^ALUMNOS/i.test(linea)) {
             numeroPregunta = 1;
 
+            // limpiar nombre en la misma línea
             let alumno = linea
                 .replace(/ALUMNOS\s*:/i, "")
-                .replace(/_/g, "")
+                .replace(/^[_\s]+/, "")
+                .replace(/,/g, "")   // QUITAR COMAS
                 .trim();
-
             if (alumno) resultado.push(alumno);
 
             i++;
-
+            // limpiar nombres en líneas siguientes
             while (
                 i < lineas.length &&
                 !/^ALUMNOS/i.test(lineas[i]) &&
-                !lineas[i].startsWith("¿")
+                !/^TEMA/i.test(lineas[i]) &&
+                !esPregunta(lineas[i], lineas[i - 1])
             ) {
-                let posible = lineas[i].replace(/_/g, "").trim();
-                if (posible) resultado.push(posible);
+                let nombre = lineas[i]
+                    .replace(/^[_\s]+/, "")
+                    .replace(/,/g, "")   // QUITAR COMAS
+                    .trim();
+                if (nombre) resultado.push(nombre);
                 i++;
             }
             continue;
@@ -100,19 +153,19 @@ function procesarTextoTXT(texto) {
         }
 
         // ===== PREGUNTA =====
-        if (linea.startsWith("¿")) {
-            resultado.push(`${numeroPregunta}. ${linea}`);
+        if (esPregunta(linea, lineas[i - 1])) {
+            let pregunta = linea.replace(/^\d+\.\s*/, "").replace(/^[A-E]\)\s*/, "");
+            resultado.push(`${numeroPregunta}. ${pregunta}`);
             i++;
-
-            const letras = ["A", "B", "C", "D", "E", "F"];
-            let idx = 0;
 
             while (
                 i < lineas.length &&
-                !lineas[i].startsWith("¿") &&
+                !esPregunta(lineas[i], lineas[i - 1]) &&
                 !/^ALUMNOS/i.test(lineas[i])
             ) {
-                resultado.push(`${letras[idx++]}) ${lineas[i]}`);
+                if (esOpcion(lineas[i])) {
+                    resultado.push(lineas[i]);
+                }
                 i++;
             }
 
@@ -151,7 +204,7 @@ exportExcelBtn.addEventListener("click", () => {
    PROCESAR TEXTO PARA EXCEL
 ================================ */
 function procesarTextoExcel(texto) {
-    const lineas = texto.split("\n").map(l => l.trim()).filter(l => l !== "");
+    const lineas = normalizarLineas(texto);
 
     let filas = [];
     let alumnos = [];
@@ -167,6 +220,7 @@ function procesarTextoExcel(texto) {
             filas.push([
                 `$CATEGORY: $course$/top/EXAMENES DE GRADO/${String(numeroCategoria++).padStart(2, "0")}. ${alumno.replace(/,/g, "")}`
             ]);
+
             filas.push([""]);
         });
 
@@ -174,7 +228,9 @@ function procesarTextoExcel(texto) {
             filas.push([`::e_${p.num}::${p.texto}{`]);
 
             p.opciones.forEach((op, i) => {
-                filas.push([(i === 0 ? "=" : "~") + op]);
+                // eliminar letras A)-E) y dejar solo texto
+                let textoLimpio = op.replace(/^[A-E]\)\s*/, "");
+                filas.push([(i === 0 ? "=" : "~") + textoLimpio]);
             });
 
             filas.push(["}"]);
@@ -187,55 +243,55 @@ function procesarTextoExcel(texto) {
     }
 
     let i = 0;
-
     while (i < lineas.length) {
         let linea = lineas[i];
 
-        // ===== NUEVO BLOQUE =====
+        // ===== ALUMNOS =====
         if (/^ALUMNOS/i.test(linea)) {
             cerrarBloque();
             alumnos = [];
             preguntas = [];
             numeroPregunta = 1;
 
-            // 🔹 alumno en la MISMA línea
+            // alumno en la misma línea
             let mismoRenglon = linea
                 .replace(/ALUMNOS\s*:/i, "")
-                .replace(/_/g, "")
+                .replace(/^[_\s]+/, "")   // eliminar guiones bajos y espacios al inicio
                 .trim();
-
             if (mismoRenglon) alumnos.push(mismoRenglon);
 
             i++;
-
-            // 🔹 alumnos en líneas siguientes
+            // alumnos en líneas siguientes
             while (
                 i < lineas.length &&
                 !/^ALUMNOS/i.test(lineas[i]) &&
-                !lineas[i].startsWith("¿") &&
-                !/^TEMA/i.test(lineas[i])
+                !/^TEMA/i.test(lineas[i]) &&
+                !esPregunta(lineas[i], lineas[i - 1])
             ) {
-                let nombre = lineas[i].replace(/_/g, "").trim();
+                let nombre = lineas[i]
+                    .replace(/^[_\s]+/, "")
+                    .replace(/,/g, "")   // QUITAR COMAS
+                    .trim();
                 if (nombre) alumnos.push(nombre);
                 i++;
             }
-
             continue;
         }
 
         // ===== PREGUNTA =====
-        if (linea.startsWith("¿")) {
-            let textoPregunta = linea;
+        if (esPregunta(linea, lineas[i - 1])) {
+            let textoPregunta = linea.replace(/^\d+\.\s*/, "").replace(/^[A-E]\)\s*/, "");
             let opciones = [];
 
             i++;
-
             while (
                 i < lineas.length &&
-                !lineas[i].startsWith("¿") &&
+                !esPregunta(lineas[i], lineas[i - 1]) &&
                 !/^ALUMNOS/i.test(lineas[i])
             ) {
-                opciones.push(lineas[i]);
+                if (esOpcion(lineas[i])) {
+                    opciones.push(lineas[i]);
+                }
                 i++;
             }
 
