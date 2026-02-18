@@ -3,6 +3,7 @@ const output = document.getElementById("output");
 const exportBtn = document.getElementById("exportBtn");
 const exportExcelBtn = document.getElementById("exportExcelBtn");
 const clearBtn = document.getElementById("clearBtn");
+const exportAlumnosBtn = document.getElementById("exportAlumnosBtn");
 
 /* ===============================
    VARIABLES
@@ -254,4 +255,72 @@ clearBtn.addEventListener("click", () => {
     document.getElementById("fileName").textContent = "";
     textoOriginal = "";
     textoProcesadoTXT = "";
+});
+
+/* ===============================
+   EXPORTAR LISTA DE ALUMNOS
+================================ */
+exportAlumnosBtn.addEventListener("click", () => {
+
+    if (!textoOriginal) {
+        alert("Primero carga un archivo.");
+        return;
+    }
+
+    const lineas = normalizarLineas(textoOriginal);
+
+    let alumnos = [];
+
+    for (let i = 0; i < lineas.length; i++) {
+
+        if (esEncabezadoAlumnos(lineas[i])) {
+
+            // primer alumno
+            let nombre = lineas[i]
+                .replace(/^(ALUMNOS?|ALUMNA?|ALUMNO\(A\)|APELLIDOS Y NOMBRES)\s*:/i, "")
+                .replace(/^[_\s]+/, "")
+                .replace(/,/g, "")
+                .trim();
+
+            if (nombre) alumnos.push(nombre);
+
+            i++;
+
+            // siguientes alumnos
+            while (
+                i < lineas.length &&
+                !/^TEMA/i.test(lineas[i]) &&
+                !esPregunta(lineas[i], lineas[i - 1])
+            ) {
+
+                let alumno = lineas[i]
+                    .replace(/^[_\s]+/, "")
+                    .replace(/,/g, "")
+                    .trim();
+
+                if (alumno) alumnos.push(alumno);
+
+                i++;
+            }
+        }
+    }
+
+    if (!alumnos.length) {
+        alert("No se encontraron alumnos.");
+        return;
+    }
+
+    // enumerar
+    let textoLista = alumnos
+        .map((a, index) => `${index + 1}. ${a}`)
+        .join("\n");
+
+    // descargar
+    const blob = new Blob([textoLista], { type: "text/plain;charset=utf-8;" });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "lista_alumnos.txt";
+    a.click();
+
 });
