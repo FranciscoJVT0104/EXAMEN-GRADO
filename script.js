@@ -260,6 +260,24 @@ clearBtn.addEventListener("click", () => {
 /* ===============================
    EXPORTAR LISTA DE ALUMNOS
 ================================ */
+function limpiarNombreAlumno(texto) {
+
+    let limpio = texto
+        .replace(/^(ALUMNOS?|ALUMNAS?|ALUMNOS\(AS\)|ALUMNO\(A\)|ALUMNA\(O\)|APELLIDOS Y NOMBRES)\s*:/i, "")
+        .replace(/^[_•\-\s]+/, "")
+        .replace(/,/g, "")
+        .trim();
+
+    // evitar encabezados sin nombre
+    if (
+        /^(ALUMNOS?|ALUMNAS?|ALUMNOS\(AS\)|ALUMNO\(A\)|ALUMNA\(O\)|APELLIDOS Y NOMBRES)$/i.test(limpio)
+    ) {
+        return "";
+    }
+
+    return limpio;
+}
+
 exportAlumnosBtn.addEventListener("click", () => {
 
     if (!textoOriginal) {
@@ -275,28 +293,22 @@ exportAlumnosBtn.addEventListener("click", () => {
 
         if (esEncabezadoAlumnos(lineas[i])) {
 
-            // primer alumno
-            let nombre = lineas[i]
-                .replace(/^(ALUMNOS?|ALUMNA?|ALUMNO\(A\)|APELLIDOS Y NOMBRES)\s*:/i, "")
-                .replace(/^[_\s]+/, "")
-                .replace(/,/g, "")
-                .trim();
+            // alumno en la misma línea
+            let nombre = limpiarNombreAlumno(lineas[i]);
 
             if (nombre) alumnos.push(nombre);
 
             i++;
 
-            // siguientes alumnos
+            // alumnos en líneas siguientes
             while (
                 i < lineas.length &&
+                !esEncabezadoAlumnos(lineas[i]) &&
                 !/^TEMA/i.test(lineas[i]) &&
                 !esPregunta(lineas[i], lineas[i - 1])
             ) {
 
-                let alumno = lineas[i]
-                    .replace(/^[_\s]+/, "")
-                    .replace(/,/g, "")
-                    .trim();
+                let alumno = limpiarNombreAlumno(lineas[i]);
 
                 if (alumno) alumnos.push(alumno);
 
@@ -310,17 +322,22 @@ exportAlumnosBtn.addEventListener("click", () => {
         return;
     }
 
+    // eliminar duplicados por seguridad
+    alumnos = [...new Set(alumnos)];
+
     // enumerar
-    let textoLista = alumnos
+    const textoLista = alumnos
         .map((a, index) => `${index + 1}. ${a}`)
         .join("\n");
 
     // descargar
     const blob = new Blob([textoLista], { type: "text/plain;charset=utf-8;" });
 
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "lista_alumnos.txt";
-    a.click();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "lista_alumnos.txt";
+    link.click();
+
+    URL.revokeObjectURL(link.href);
 
 });
